@@ -18,24 +18,25 @@ struct FeedView: View {
                         ProgressView()
                     }
                     ForEach(threadsVM.threads) { thread in
-                        ThreadTileWidget(thread: thread)
+                        NavigationLink(value: thread) {
+                            ThreadTileWidget(thread: thread)
+                        }
                     }
                 }
             }
             .refreshable {
                 print("refreshing..")
-                Task {
-                    try await threadsVM.fetchFeedThreads()
-                }
+                threadsVM.fetchFeedThreadsRealTime()
             }
+            .navigationDestination(for: ThreadsModel.self, destination: { thread in
+                Text("Threads Comments View")
+            })
             .navigationTitle("Threads")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem {
                     Button{
-                        Task {
-                            try await threadsVM.fetchFeedThreads()
-                        }
+                        threadsVM.fetchFeedThreadsRealTime()
                     } label: {
                         Image(systemName: "arrow.counterclockwise")
                     }

@@ -204,7 +204,6 @@
 		E7DE45C62C9932A700F452BF /* ThreadsClone */ = {
 			isa = PBXGroup;
 			children = (
-				E7DE45D52C9935D700F452BF /* App */,
 				E7DE45CB2C9932A800F452BF /* Assets.xcassets */,
 				E701F16C2C9C398C009D8224 /* Components */,
 				E7DE45C92C9932A700F452BF /* ContentView.swift */,
@@ -227,13 +226,6 @@
 				E7DE45CE2C9932A800F452BF /* Preview Assets.xcassets */,
 			);
 			path = "Preview Content";
-			sourceTree = "<group>";
-		};
-		E7DE45D52C9935D700F452BF /* App */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = App;
 			sourceTree = "<group>";
 		};
 		E7DE45D92C99363800F452BF /* Views */ = {

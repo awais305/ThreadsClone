@@ -9,6 +9,9 @@ import SwiftUI
 
 struct ThreadTileWidget: View {
     let thread: ThreadsModel
+    let uid: String = AuthService.instance.userSession!.uid
+    
+    @StateObject var threadsVM = ThreadsViewModel()
     
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -23,9 +26,13 @@ struct ThreadTileWidget: View {
                 HStack(spacing: 16) {
                     HStack(spacing: 5) {
                         Button {
-                            
+                            if thread.likes.contains(uid) {
+                                Task { try await threadsVM.dislikeThread(threadId: thread.id) }
+                            } else {
+                                Task { try await threadsVM.likeThread(threadId: thread.id) }
+                            }
                         } label: {
-                            Image(systemName: thread.likes.count > 0 ? "heart.fill" : "heart")
+                            Image(systemName: thread.likes.contains(uid) ? "heart.fill" : "heart")
                         }
                         if thread.likes.count > 0 {
                             Text("\(thread.likes.count)")
@@ -42,7 +49,6 @@ struct ThreadTileWidget: View {
                         
                     } label: { Image(systemName: "paperplane") }
                 }
-                .foregroundStyle(.black)
                 .padding(.top, 8)
             }
             Spacer()
@@ -52,11 +58,14 @@ struct ThreadTileWidget: View {
             Image(systemName: "ellipsis")
                 .padding(.vertical, 5)
         }
+        .foregroundStyle(.black)
         .padding()
         Divider()
     }
 }
 
 #Preview {
-    ThreadTileWidget(thread: DeveloperPreview.shared.thread)
+    ThreadTileWidget(
+        thread: DeveloperPreview.shared.thread
+    )
 }

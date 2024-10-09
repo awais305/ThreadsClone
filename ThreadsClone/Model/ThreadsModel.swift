@@ -7,7 +7,7 @@
 
 import FirebaseFirestore
 
-struct ThreadsModel: Identifiable, Codable {
+struct ThreadsModel: Identifiable, Codable, Hashable {
     @DocumentID var threadId: String?
     
     let ownerUid: String

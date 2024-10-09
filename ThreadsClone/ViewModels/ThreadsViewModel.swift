@@ -9,6 +9,7 @@ import Foundation
 import FirebaseAuth
 import FirebaseFirestore
 
+@MainActor
 class ThreadsViewModel: ObservableObject {
     @Published var threads = [ThreadsModel]()
     @Published var currentUserthreads = [ThreadsModel]()
@@ -16,8 +17,57 @@ class ThreadsViewModel: ObservableObject {
     @Published var isLoadingThreads: Bool = false
     @Published var alertItem: AlertItem?
     
+    private var userCache = [String: UserModel]()
+    
+
     init() {
-        Task { try await fetchFeedThreads() }
+        fetchFeedThreadsRealTime()
+    }
+    
+    func fetchCurrentUserThreads(withUid uid: String) {
+        isLoadingThreads = true
+        ThreadService.fetchSingleUserThreadsRealTime(uid: uid) { [weak self] threads in
+            guard let self = self else { return }
+            self.currentUserthreads = threads
+            self.isLoadingThreads = false
+        }
+    }
+    
+    func fetchFeedThreadsRealTime() {
+        isLoadingThreads = true
+        ThreadService.fetchThreadsRealTime { [weak self] fetchedThreads in
+            guard let self = self else { return }
+            
+            var threadsToShow = fetchedThreads.filter { $0.ownerUid != Auth.auth().currentUser?.uid }
+            
+            Task {
+                await self.fetchUsers(for: &threadsToShow)
+                self.threads = threadsToShow
+                self.isLoadingThreads = false
+            }
+        }
+    }
+
+    private func fetchUsers(for threads: inout [ThreadsModel]) async {
+        for i in 0..<threads.count {
+            let ownerUid = threads[i].ownerUid
+            
+            if let cachedUser = userCache[ownerUid] {
+                threads[i].user = cachedUser
+            } else {
+                do {
+                    let threadUser = try await UserService.instance.fetchUser(withUid: ownerUid)
+                    threads[i].user = threadUser
+                    userCache[ownerUid] = threadUser
+                } catch {
+                    print("Error fetching user for thread \(ownerUid): \(error)")
+                }
+            }
+        }
+    }
+    
+    deinit {
+        ThreadService.removeListener()
     }
     
     func uploadThreads(caption: String) async throws {
@@ -39,20 +89,35 @@ class ThreadsViewModel: ObservableObject {
         }
         
     }
+
+//    func fetchFeedThreads() async throws {
+//        isLoadingThreads = true
+//        do {
+//            var fetchedThreads = try await ThreadService.fetchThreads()
+//            
+//            fetchedThreads = fetchedThreads.filter { $0.ownerUid != Auth.auth().currentUser?.uid }
+//            
+//            self.threads = fetchedThreads
+//            
+//            try await fetchUsersThreads()
+//            isLoadingThreads = false
+//        } catch {
+//            isLoadingThreads = false
+//            print("DEBUG: \(error)")
+//            self.alertItem = AlertItem(
+//                title: "Error",
+//                message: error.localizedDescription
+//            )
+//        }
+//    }
+
     
-    func fetchFeedThreads() async throws {
-        isLoadingThreads = true
+    func likeThread(threadId: String) async throws {
+        print("Like Pressed")
+
         do {
-            var fetchedThreads = try await ThreadService.fetchThreads()
-            
-            fetchedThreads = fetchedThreads.filter { $0.ownerUid != Auth.auth().currentUser?.uid }
-            
-            self.threads = fetchedThreads
-            
-            try await fetchUsersThreads()
-            isLoadingThreads = false
+            try await ThreadService.likeThread(threadId: threadId)
         } catch {
-            isLoadingThreads = false
             print("DEBUG: \(error)")
             self.alertItem = AlertItem(
                 title: "Error",
@@ -60,21 +125,18 @@ class ThreadsViewModel: ObservableObject {
             )
         }
     }
-
     
-    private func fetchUsersThreads() async throws {
-        for i in 0 ..< threads.count {
-            let ownerUid = threads[i].ownerUid
-            
-            let threadUser = try await UserService.instance.fetchUser(withUid: ownerUid)
-            threads[i].user = threadUser
+    func dislikeThread(threadId: String) async throws {
+        print("Dislike Pressed")
+        do {
+            try await ThreadService.dislikeThread(threadId: threadId)
+        } catch {
+            print("DEBUG: \(error)")
+            self.alertItem = AlertItem(
+                title: "Error",
+                message: error.localizedDescription
+            )
         }
-    }
-    
-    func fetchCurrentUserThreads(withUid uid: String) async throws {
-        isLoadingThreads = true
-        self.currentUserthreads = try await ThreadService.fetchSingleUserThreads(uid: uid)
-        isLoadingThreads = false
     }
 }
 

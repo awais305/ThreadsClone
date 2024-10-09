@@ -51,13 +51,11 @@ struct ProfileContentSection: View {
             if selectedFilter == .threads {
                 if threadVM.isLoadingThreads {
                     ProgressView()
-                        .padding(.top, 200)
                 }
                 if threadVM.currentUserthreads.isEmpty && !threadVM.isLoadingThreads {
                     Text("No threads yet")
                         .font(.title3)
                         .foregroundStyle(Color(.systemGray))
-                        .padding(.top, 200)
                 }
                 ForEach (threadVM.currentUserthreads) { thread in
                     ThreadTileWidget(thread: thread)
@@ -65,11 +63,9 @@ struct ProfileContentSection: View {
             }
         }
         .onAppear {
-            Task{
-                if uid == nil { return }
-                print(uid!);
-                try await threadVM.fetchCurrentUserThreads(withUid: uid!)
-            }
+            if uid == nil { return }
+            print(uid!);
+            threadVM.fetchCurrentUserThreads(withUid: uid!)
         }
     }
 }
